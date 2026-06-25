@@ -1,58 +1,75 @@
-### 基于家系的相似度计算工具
+### Pedigree-Based Computational Tool for Telomere Variant Repeat (TVR) Sequence Similarity
 
-#### 使用步骤
+#### Getting Started
 
-1. 安装**uv**，下载**python3.12**：
+1. Install **uv** and **python 3.12**:
 
    ```shell
-   # 安装uv包管理工具
+   # Install the uv package manager
    curl -LsSf https://astral.sh/uv/install.sh | sh
    
-   # 下载python3.12
+   # Install python 3.12
    uv python install 3.12
    ```
 
-2. 同步依赖：
+2. Sync dependencies:
 
    ```shell
    uv sync
    ```
 
-3. 使用uv执行脚本**.\scripts\run_compute_similarity.py**
+3. Run the script using **uv**:
 
    ```shell
-   uv run .\scripts\run_compute_similarity.py "你的根目录"
+   # If individual Telogator2 result files are named as "<family_id>_<role>" (e.g., "FJ0018_fa"), run:
+   uv run ./scripts/run_compute_similarity.py "<root_dir>"
+   
+   # If individual Telogator2 result files do not follow the family naming convention, run:
+   uv run ./scripts/run_compute_similarity_use_ped.py "<root_dir>"
    ```
 
-   #### 参数说明：
+   #### Parameter Description：
 
-   ##### run_compute_similarity.py：
+   **run_compute_similarity.py**：
    
-   |    参数    |                 说明                 |
-   | :--------: | :----------------------------------: |
-   |  root_dir  | 存放测序结果的根路径，包含了多个个体 |
-   | --with_5mc |           是否计算5mc结果            |
-   | --save_csv |            保存至csv文件             |
-   | --save_tsv |            保存至tsv文件             |
-   |   --sort   |             启用结果排序             |
+   |  Parameter     |                             Description                             |
+   |:--------------:|:-------------------------------------------------------------------:|
+   |    root_dir    |      Root directory containing Telogator2 results for samples       |
+   |   --with_5mc   | Specify if the Telogator2 results were generated from 5mc BAM files |
+   |   --save_csv   |                    Save the output to a CSV file                    |
+   |   --save_tsv   |                    Save the output to a TSV file                    |
+   |     --sort     |                    Enable sorting of the results                    |
    
    **run_compute_similarity_use_ped.py**：
    
-   |     参数      |                 说明                 |
-   | :-----------: | :----------------------------------: |
-   |   root_dir    | 存放测序结果的根路径，包含了多个个体 |
-   |  --with_5mc   |           是否计算5mc结果            |
-   |  --save_csv   |            保存至csv文件             |
-   | --family_list |             ped文件路径              |
-   |    --sort     |             启用结果排序             |
-   
-   **run_filter_analyzed_parent_ids.py**：
-   
-   |        参数        |      说明      |
-   | :----------------: | :------------: |
-   | offspring_data_dir | 子代数据文件夹 |
-   |  parent_data_dir   |  亲代数据目录  |
-   |     output_dir     |    输出目录    |
-   
-   
+   |   Parameter       |                             Description                             |
+   |:-----------------:|:-------------------------------------------------------------------:|
+   |     root_dir      |      Root directory containing Telogator2 results for samples       |
+   |    --with_5mc     | Specify if the Telogator2 results were generated from 5mc BAM files |
+   |    --save_csv     |                    Save the output to a CSV file                    |
+   |   --family_list   |               Path to the simple PED (pedigree) file                |
+   |      --sort       |                    Enable sorting of the results                    |
 
+   #### Simple PED File Format
+
+   If you are using the `run_compute_similarity_use_ped.py` script, you must provide a tab-separated text file via the `--family_list` parameter.
+   
+   &nbsp;
+   
+   **Column Definitions:**
+   * `FID`: Family ID
+   * `IID`: Individual ID
+   * `PID`: Paternal ID (`0` if unknown)
+   * `MID`: Maternal ID (`0` if unknown)
+
+   &nbsp;
+
+   **An example (`family_list.ped`):**
+
+   ```text
+   FID	IID	PID	MID
+   FJ0018	FJ0018_fa	0	0
+   FJ0018	FJ0018_mo	0	0
+   FJ0018	FJ0018_p1	FJ0018_fa	FJ0018_mo
+   FJ0018	FJ0018_s1	FJ0018_fa	FJ0018_mo
+   ```
