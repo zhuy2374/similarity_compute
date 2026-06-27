@@ -1,5 +1,5 @@
 #
 # @Author  : zhuy
 # @Date    : 2026/1/10 17:22
-# @Desc    : [简要描述]
+# @Desc    : [Brief description]
 #

@@ -1,7 +1,7 @@
 #
 # @Author  : zhuy
 # @Date    : 2026/1/13 17:44
-# @Desc    : 基于ped文件的家系相似度计算脚本
+# @Desc    : PED-based family similarity calculation script
 #
 import argparse
 from pathlib import Path
@@ -12,7 +12,7 @@ import os
 from tqdm import tqdm
 
 
-# 获取项目根目录路径，并将其插入到系统路径的开头，以便能够导入项目中的模块
+# Get the project root path and insert it at the start of sys.path so project modules can be imported.
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
@@ -26,45 +26,45 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     parser = argparse.ArgumentParser(description="Collect family directories named <familyID>_<individual>.")
-    parser.add_argument("root_dir", help="根目录，包含若干以 <家系ID>_<个体> 命名的子文件夹", type=str)
-    parser.add_argument("--family_list", help="包含家系代码的文件", type=str)
-    parser.add_argument("--with_5mc", action="store_true", help="是否计算5mc结果")
-    parser.add_argument("--save_csv", action="store_true", help="保存到csv文件",default= True)
-    parser.add_argument("--save_tsv", action="store_true", help="保存到tsv文件")
-    parser.add_argument("--sort", action="store_true", help="是否对结果排序")
+    parser.add_argument("root_dir", help="root directory containing Telogator2 results for samples", type=str)
+    parser.add_argument("--family_list", help="file containing family codes", type=str)
+    parser.add_argument("--with_5mc", action="store_true", help="specify if the Telogator2 results were generated from 5mc BAM files")
+    parser.add_argument("--save_csv", action="store_true", help="save the output to a CSV file",default= True)
+    parser.add_argument("--save_tsv", action="store_true", help="save the output to a TSV file")
+    parser.add_argument("--sort", action="store_true", help="enable sorting of the results")
     args = parser.parse_args()
 
     try:
         base_dir = args.root_dir
 
-        logging.info(f"开始处理根目录：{base_dir}")
+        logging.info(f"Starting to process root directory: {base_dir}")
 
-        # 解析ped格式文件
+        # Parse the PED-format file.
         ped_df = FileUtil.load_ped_file(args.family_list)
 
-        # 定义过滤器
+        # Define filters.
         row_filters = [
-            # 过滤行
+            # Filter rows.
             column_not_contains('#chr', ','),
-            # 过滤 tvr_consensus 为 NaN 的 行
+            # Filter out rows where tvr_consensus is NaN.
             column_not_nan('tvr_consensus'),
         ]
         col_filters = [
-            # 去掉不用的列
+            # Drop unused columns.
             drop_columns(["position", "ref_samp", "supporting_reads"]),
-            # 添加动态列
+            # Add dynamic columns.
             fast_assign(
                 reads_number=lambda x: x['read_TLs'].str.split(",").str.len()
             )
         ]
 
-        logging.info("开始处理家系数据......")
-        # 遍历每个个体
-        for _, row in tqdm(ped_df.iterrows(), total=len(ped_df), desc="正在处理家系数据"):
+        logging.info("Starting to process family data...")
+        # Iterate through each individual.
+        for _, row in tqdm(ped_df.iterrows(), total=len(ped_df), desc="Processing family data"):
             offspring = row['IID']
             mo = row['MID']
             fa = row['PID']
-            # 跳过亲代
+            # Skip parents.
             if str(mo) == "0" and str(fa) == "0":
                 continue
 
@@ -90,15 +90,15 @@ def main():
                 else:
                     FileUtil.write_dataframe_to_tsv(result_df, Path(f"{base_dir}/{offspring}/{offspring}_similarity.tsv"), sort=args.sort)
 
-        logging.info("处理完成")
+        logging.info("Processing complete.")
         if args.save_csv:
-            logging.info("所有结果已保存至csv")
+            logging.info("All results have been saved to CSV.")
 
         if args.save_tsv:
-            logging.info("所有结果已保存至tsv")
+            logging.info("All results have been saved to TSV.")
 
     except Exception as e:
-        logging.error(f"处理数据时出错：{e}")
+        logging.error(f"Error while processing data: {e}")
         return
 
 if __name__ == "__main__":

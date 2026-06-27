@@ -1,7 +1,7 @@
 #
 # @Author  : zhuy
 # @Date    : 2026/1/10 20:07
-# @Desc    : 相似度计算脚本
+# @Desc    : Similarity calculation script
 #
 import argparse
 from pathlib import Path
@@ -10,7 +10,7 @@ import sys
 import os
 
 from tqdm import tqdm
-# 获取项目根目录路径，并将其插入到系统路径的开头，以便能够导入项目中的模块
+# Get the project root path and insert it at the start of sys.path so project modules can be imported.
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
@@ -24,48 +24,48 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     parser = argparse.ArgumentParser(description="Collect family directories named <familyID>_<individual>.")
-    parser.add_argument("root_dir", help="根目录，包含若干以 <家系ID>_<个体> 命名的子文件夹", type=str)
-    parser.add_argument("--with_5mc", action="store_true", help="是否计算5mc结果")
-    parser.add_argument("--save_csv", action="store_true", help="保存到csv文件",default= True)
-    parser.add_argument("--save_tsv", action="store_true", help="保存到tsv文件")
-    parser.add_argument("--sort", action="store_true", help="是否对结果排序")
+    parser.add_argument("root_dir", help="root directory containing Telogator2 results for samples", type=str)
+    parser.add_argument("--with_5mc", action="store_true", help="specify if the Telogator2 results were generated from 5mc BAM files")
+    parser.add_argument("--save_csv", action="store_true", help="save the output to a CSV file",default= True)
+    parser.add_argument("--save_tsv", action="store_true", help="save the output to a TSV file")
+    parser.add_argument("--sort", action="store_true", help="enable sorting of the results")
     args = parser.parse_args()
 
     try:
 
         base_dir = args.root_dir
 
-        logging.info(f"开始处理根目录：{base_dir}")
-        # 统计根目录下的家系
+        logging.info(f"Starting to process root directory: {base_dir}")
+        # Count families under the root directory.
         family_dict = FamilyMapper.collect_family_dirs(root=Path(base_dir), return_absolute=True)
-        logging.info(f"处理完成，共有家系：{len(family_dict)}个")
+        logging.info(f"Directory scan complete. Found {len(family_dict)} families.")
 
-        # 定义过滤器
+        # Define filters.
         row_filters = [
-            # 过滤行
+            # Filter rows.
             column_not_contains('#chr', ','),
-            # 过滤 tvr_consensus 为 NaN 的 行
+            # Filter out rows where tvr_consensus is NaN.
             column_not_nan('tvr_consensus'),
         ]
         col_filters = [
-            # 去掉不用的列
+            # Drop unused columns.
             drop_columns(["position", "ref_samp", "supporting_reads"]),
-            # 添加动态列
+            # Add dynamic columns.
             fast_assign(
                 reads_number=lambda x: x['read_TLs'].str.split(",").str.len()
             )
         ]
-        logging.info("开始处理家系数据......")
+        logging.info("Starting to process family data...")
 
-        # 遍历每个家系
-        for key, value in tqdm(family_dict.items(), total=len(family_dict), desc="正在处理家系数据"):
-            # 获取dataframe
+        # Iterate through each family.
+        for key, value in tqdm(family_dict.items(), total=len(family_dict), desc="Processing family data"):
+            # Get DataFrames.
             s1_df, p1_df, fa_df, mo_df = FileUtil.get_family_dfs(key, base_dir, row_filters, col_filters, with_5mc=args.with_5mc)
 
-            # 计算s1与parent的相似度
+            # Compute similarity between s1 and parents.
             s1_similarity_result_df = OffspringParentSimilarityCalculator.compute_similarity(s1_df, mo_df, fa_df)
 
-            # 计算p1与parent的相似度
+            # Compute similarity between p1 and parents.
             p1_similarity_result_df = OffspringParentSimilarityCalculator.compute_similarity(p1_df, mo_df, fa_df)
 
             if args.save_csv:
@@ -84,15 +84,15 @@ def main():
                     FileUtil.write_dataframe_to_tsv(s1_similarity_result_df, Path(f"{base_dir}/{key}_s1/{key}_s1_similarity.tsv"), sort=args.sort)
                     FileUtil.write_dataframe_to_tsv(p1_similarity_result_df, Path(f"{base_dir}/{key}_p1/{key}_p1_similarity.tsv"), sort=args.sort)
 
-        logging.info("处理完成")
+        logging.info("Processing complete.")
         if args.save_csv:
-            logging.info("所有结果已保存至csv")
+            logging.info("All results have been saved to CSV.")
 
         if args.save_tsv:
-            logging.info("所有结果已保存至tsv")
+            logging.info("All results have been saved to TSV.")
 
     except Exception as e:
-        logging.error(f"处理数据时出错：{e}")
+        logging.error(f"Error while processing data: {e}")
         return
 
 

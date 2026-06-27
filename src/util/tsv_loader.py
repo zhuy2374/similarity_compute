@@ -1,7 +1,7 @@
 #
 # @Author  : zhuy
 # @Date    : 2026/1/10 17:23
-# @Desc    : tsv加载工具类
+# @Desc    : TSV loader utility class
 #
 
 import pandas as pd
@@ -12,21 +12,21 @@ logging.basicConfig(level=logging.INFO)
 
 class TSVLoader:
     """
-    TSV 文件加载工具类
+    Utility class for loading TSV files.
     """
 
     @staticmethod
     def load(file_path, row_filters=None, col_filters=None, logic='AND', **kwargs):
         """
-        :param file_path: 文件路径
-        :param logic: 组合方式
-        :param row_filters: 行过滤器列表 (返回 Mask)
-        :param col_filters: 列操作列表 (返回处理后的 DF)
+        :param file_path: File path.
+        :param logic: How row filters are combined.
+        :param row_filters: List of row filters that return masks.
+        :param col_filters: List of column operations that return processed DataFrames.
         """
         kwargs.setdefault('sep', '\t')
         df = pd.read_csv(file_path, **kwargs)
 
-        # A. 先处理行过滤
+        # A. Apply row filters first.
         if row_filters:
             if logic.upper() == 'AND':
                 mask = pd.Series([True] * len(df), index=df.index)
@@ -36,11 +36,10 @@ class TSVLoader:
                 for f in row_filters: mask |= f(df)
             df = df[mask]
 
-        # B. 再处理列筛选/排除
+        # B. Apply column selection or exclusion.
         if col_filters:
             for f in col_filters:
                 df = f(df)
 
         return df
-
 
